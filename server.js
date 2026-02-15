@@ -5,8 +5,20 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
+
+// Explicit CORS — allow all origins (required for GitHub Pages → Render)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: '*' }));
 
 // In-memory ticket store (persists while server is running)
 const tickets = new Map();
