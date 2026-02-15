@@ -24,13 +24,18 @@ app.use(cors({ origin: '*' }));
 const tickets = new Map();
 const ratings = [];
 
-// Email transporter
+// Email transporter — explicit SMTP for Render compatibility
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.SMTP_EMAIL,
     pass: process.env.SMTP_PASSWORD,
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 // Helper: encode ticket ID to base64 URL-safe string
