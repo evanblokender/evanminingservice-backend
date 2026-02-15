@@ -136,7 +136,7 @@ app.post('/api/ticket', async (req, res) => {
     // Send notification to owner
     await sendEmail({
       from: `"Evans Mining Tickets" <${process.env.SMTP_EMAIL}>`,
-      to: 'littlesharkvr@gmail.com',
+      to: 'evan758321@gmail.com',
       subject: `🎫 New Mining Ticket from ${displayUsername}`,
       html: `
         <!DOCTYPE html>
