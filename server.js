@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const crypto = require('crypto');
 require('dotenv').config();
 
@@ -24,19 +24,18 @@ app.use(cors({ origin: '*' }));
 const tickets = new Map();
 const ratings = [];
 
-// Email transporter — explicit SMTP for Render compatibility
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_EMAIL,
-    pass: process.env.SMTP_PASSWORD,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 15000,
-});
+// Resend client (works on Render free tier — uses HTTPS not SMTP)
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Helper to send email via Resend
+async function sendEmail({ to, subject, html }) {
+  return resend.emails.send({
+    from: 'Evans Mining Service <onboarding@resend.dev>',
+    to,
+    subject,
+    html,
+  });
+}
 
 // Helper: encode ticket ID to base64 URL-safe string
 function encodeTicketId(id) {
@@ -91,8 +90,7 @@ app.post('/api/ticket', async (req, res) => {
     tickets.set(ticketId, ticket);
 
     // Send confirmation email to user
-    await transporter.sendMail({
-      from: `"Evans Mining Service" <${process.env.SMTP_EMAIL}>`,
+    await sendEmail({
       to: email,
       subject: '✅ Your Mining Ticket Has Been Received — Evans Mining Service',
       html: `
@@ -136,7 +134,7 @@ app.post('/api/ticket', async (req, res) => {
     });
 
     // Send notification to owner
-    await transporter.sendMail({
+    await sendEmail({
       from: `"Evans Mining Tickets" <${process.env.SMTP_EMAIL}>`,
       to: 'littlesharkvr@gmail.com',
       subject: `🎫 New Mining Ticket from ${displayUsername}`,
@@ -340,7 +338,7 @@ app.post('/api/ticket/:id/message', async (req, res) => {
 
     ticket.messages.push({ from: 'evan', text: message, at: new Date().toISOString() });
 
-    await transporter.sendMail({
+    await sendEmail({
       from: `"Evan - Evans Mining" <${process.env.SMTP_EMAIL}>`,
       to: ticket.email,
       subject: `💬 Evan Sent You a Message — Evans Mining Service`,
@@ -399,7 +397,7 @@ app.post('/api/ticket/:id/complete', async (req, res) => {
     ticket.completedAt = new Date().toISOString();
 
     // Send email to user asking for review
-    await transporter.sendMail({
+    await sendEmail({
       from: `"Evan - Evans Mining" <${process.env.SMTP_EMAIL}>`,
       to: ticket.email,
       subject: `🎉 Your Mining Plot is Complete! Leave a Review — Evans Mining`,
